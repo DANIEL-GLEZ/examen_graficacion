@@ -10,18 +10,14 @@ class RatingScreen extends StatefulWidget {
 }
 
 class _RatingScreenState extends State<RatingScreen> {
-  // Estado Local
   int _currentRating = 0; // Valor de 0 a 5
   bool _isLoading = false; // Estado de carga para el botón
   bool _feedbackGiven = false; // Bandera para evitar re-calificar
 
-  // Cerebro de la lógica de animaciones SMI (Rive)
   StateMachineController? controller;
   SMITrigger? trigSuccess;
   SMITrigger? trigFail;
-  // SMIBool, SMINumber y FocusNodes del login anterior se eliminan
 
-  // La lógica del oso ahora solo usa triggers
   @override
   void initState() {
     super.initState();
@@ -33,7 +29,6 @@ class _RatingScreenState extends State<RatingScreen> {
     super.dispose();
   }
 
-  // Lógica para disparar la animación al calificar
   void _setRating(int rating) {
     if (_feedbackGiven) return;
 
@@ -47,7 +42,6 @@ class _RatingScreenState extends State<RatingScreen> {
     });
   }
 
-  // Aquí es para la Acción principal al presionar "Rate Now"
   void _onRateNow() async {
     if (_currentRating == 0 || _feedbackGiven) return;
 
@@ -56,12 +50,10 @@ class _RatingScreenState extends State<RatingScreen> {
       _feedbackGiven = true;
     });
 
-    // Simular envío de calificación por ~1s
     await Future.delayed(const Duration(seconds: 1));
 
     setState(() {
       _isLoading = false;
-      // Aquí se navegaría a otra pantalla o se mostraría un mensaje final
     });
   }
 
@@ -76,19 +68,17 @@ class _RatingScreenState extends State<RatingScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Título de la calificación
               const Text(
                 "Enjoying Router?",
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
 
-              // Animación Rive (Oso)
               SizedBox(
                 width: size.width,
                 height: 200,
                 child: RiveAnimation.asset(
-                  'assets/animated_login_character.riv', // Usamos el mismo archivo
+                  'assets/animated_login_character.riv',
                   stateMachines: ["Login Machine"],
                   onInit: (artboard) {
                     controller = StateMachineController.fromArtboard(
@@ -97,7 +87,7 @@ class _RatingScreenState extends State<RatingScreen> {
                     );
                     if (controller == null) return;
                     artboard.addController(controller!);
-                    // Enlazamos solo los triggers necesarios
+
                     trigSuccess = controller!.findSMI('trigSuccess');
                     trigFail = controller!.findSMI('trigFail');
                   },
@@ -105,13 +95,11 @@ class _RatingScreenState extends State<RatingScreen> {
               ),
               const SizedBox(height: 30),
 
-              // Estrellas de Calificación
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (index) {
                   return IconButton(
                     icon: Icon(
-                      // Icono cambia si el índice es menor al rating actual
                       index < _currentRating ? Icons.star : Icons.star_border,
                       color: index < _currentRating
                           ? Colors.amber
@@ -125,7 +113,6 @@ class _RatingScreenState extends State<RatingScreen> {
                 }),
               ),
 
-              // Mensaje de feedback visual
               const SizedBox(height: 20),
               if (_currentRating > 0)
                 Text(
@@ -139,7 +126,6 @@ class _RatingScreenState extends State<RatingScreen> {
                 ),
               const SizedBox(height: 40),
 
-              // Aquí es para poner los Botones de Acción
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -148,7 +134,6 @@ class _RatingScreenState extends State<RatingScreen> {
                     onPressed: _feedbackGiven || _isLoading
                         ? null
                         : () {
-                            // Simular que el usuario rechaza la acción
                             setState(() => _feedbackGiven = true);
                           },
                     child: const Text(
@@ -157,7 +142,6 @@ class _RatingScreenState extends State<RatingScreen> {
                     ),
                   ),
 
-                  // Aquí es para el espacio del Botón "Rate Now" (Principal)
                   MaterialButton(
                     minWidth: size.width * 0.4,
                     height: 50,
