@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
-import 'dart:async'; // Aún útil para futuras animaciones, aunque no se use Timer
+import 'dart:async';
 
 class RatingScreen extends StatefulWidget {
   const RatingScreen({super.key});
@@ -10,18 +10,15 @@ class RatingScreen extends StatefulWidget {
 }
 
 class _RatingScreenState extends State<RatingScreen> {
-  int _currentRating = 0; // Valor de 0 a 5
-  bool _isLoading = false; // Estado de carga para el botón
-  bool _feedbackGiven = false; // Bandera para evitar re-calificar
+  int _currentRating = 0;
+  bool _isLoading = false;
+  bool _ratingSent = false;
 
   StateMachineController? controller;
-  SMITrigger? trigSuccess;
-  SMITrigger? trigFail;
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  SMITrigger? trigSuccess; // Animación feliz
+  SMITrigger? trigFail; // Animación triste
+  SMIBool? isChecking; // Controla la atención del oso
+  SMINumber? numLook; // Controla hacia dónde mira el oso
 
   @override
   void dispose() {
@@ -29,37 +26,46 @@ class _RatingScreenState extends State<RatingScreen> {
     super.dispose();
   }
 
+  // =======================================================
+  // FUNCIÓN DE CALIFICACIÓN CORREGIDA
+  // =======================================================
   void _setRating(int rating) {
-    if (_feedbackGiven) return;
+    if (_ratingSent) return;
+
+    isChecking?.change(true);
+    numLook?.value = (rating / 5) * 100;
 
     setState(() {
       _currentRating = rating;
-      if (rating >= 4) {
-        trigSuccess?.fire();
-      } else if (rating > 0) {
-        trigFail?.fire();
+    });
+
+    if (rating >= 4) {
+      trigSuccess?.fire(); // Oso feliz
+    } else {
+      trigFail?.fire(); // Oso triste
+    }
+
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        isChecking?.change(false);
+        numLook?.value = 50;
       }
     });
   }
 
   void _onRateNow() async {
-    if (_currentRating == 0 || _feedbackGiven) return;
+    if (_currentRating == 0 || _isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-      _feedbackGiven = true;
-    });
+    setState(() => _isLoading = true);
 
     await Future.delayed(const Duration(seconds: 1));
 
-    setState(() {
-      _isLoading = false;
-    });
+    setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       body: SafeArea(
@@ -69,7 +75,7 @@ class _RatingScreenState extends State<RatingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                "Enjoying Router?",
+                "Califica el curso del Profesor Gaxiola",
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
@@ -90,6 +96,8 @@ class _RatingScreenState extends State<RatingScreen> {
 
                     trigSuccess = controller!.findSMI('trigSuccess');
                     trigFail = controller!.findSMI('trigFail');
+                    isChecking = controller!.findSMI('isChecking');
+                    numLook = controller!.findSMI('numLook');
                   },
                 ),
               ),
@@ -106,14 +114,13 @@ class _RatingScreenState extends State<RatingScreen> {
                           : Colors.grey,
                       size: 40,
                     ),
-                    onPressed: _feedbackGiven
-                        ? null
-                        : () => _setRating(index + 1),
+                    onPressed: _ratingSent ? null : () => _setRating(index + 1),
                   );
                 }),
               ),
 
               const SizedBox(height: 20),
+
               if (_currentRating > 0)
                 Text(
                   _currentRating >= 4
@@ -124,24 +131,23 @@ class _RatingScreenState extends State<RatingScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+
               const SizedBox(height: 40),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  // Botón "No Thanks"
                   TextButton(
-                    onPressed: _feedbackGiven || _isLoading
+                    onPressed: _ratingSent || _isLoading
                         ? null
                         : () {
-                            setState(() => _feedbackGiven = true);
+                            setState(() => _ratingSent = true);
                           },
                     child: const Text(
                       "No Thanks",
                       style: TextStyle(color: Colors.grey),
                     ),
                   ),
-
                   MaterialButton(
                     minWidth: size.width * 0.4,
                     height: 50,
@@ -149,8 +155,7 @@ class _RatingScreenState extends State<RatingScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    onPressed:
-                        _isLoading || _currentRating == 0 || _feedbackGiven
+                    onPressed: _isLoading || _currentRating == 0
                         ? null
                         : _onRateNow,
                     child: _isLoading
